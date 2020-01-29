@@ -3,6 +3,7 @@
 namespace Sushi;
 
 use Illuminate\Database\Connectors\ConnectionFactory;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Str;
 
 trait Sushi
@@ -73,18 +74,17 @@ trait Sushi
         $firstRow = $rows[0];
         $tableName = $this->getTable();
 
-        static::resolveConnection()->getSchemaBuilder()->create($tableName, function ($table) use ($firstRow) {
-            foreach ($firstRow as $column => $value) {
-                $type = is_numeric($value) ? 'integer' : 'string';
-
-                if ($column === 'id' && $type == 'integer') {
-                    $table->increments('id');
-                    continue;
-                }
-
-                $table->{$type}($column);
-            }
-        });
+        static::resolveConnection()
+              ->getSchemaBuilder()
+              ->create($tableName, function (Blueprint $table) use ($firstRow) {
+                  foreach ($firstRow as $column => $value) {
+                      if ($column === 'id' && is_numeric($value)) {
+                          $table->increments('id');
+                      } else {
+                          $table->string($column);
+                      }
+                  }
+              });
 
         static::insert($rows);
     }
